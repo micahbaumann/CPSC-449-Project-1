@@ -1,3 +1,5 @@
+# This file contains starter code for the project
+
 from fastapi import FastAPI
 
 app = FastAPI()
