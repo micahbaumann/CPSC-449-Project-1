@@ -1,0 +1,19 @@
+{
+    "$schema": "https://www.krakend.io/schema/v2.4/krakend.json",
+    "version": 3,
+    "endpoints": [
+            {
+                "endpoint": "/student/list",
+                "method": "GET",
+                "backend": [
+                {
+                    "url_pattern": "/",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5000/"
+                    ]
+                }
+                ]
+            }
+        ]
+}
