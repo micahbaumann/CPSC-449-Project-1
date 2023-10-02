@@ -19,6 +19,24 @@
                     }
                 }
                 ]
+            },
+            {
+                "endpoint": "/",
+                "method": "GET",
+                "backend": [
+                {
+                    "url_pattern": "/",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
             }
         ]
 }
