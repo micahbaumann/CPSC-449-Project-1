@@ -1,2 +1,2 @@
 api: uvicorn --port $PORT api:app --reload
-krakend: krakend --port $PORT run -c etc/krakend.json
+krakend: echo ./etc/krakend.json | entr -nrz krakend run --port $PORT --config etc/krakend.json
