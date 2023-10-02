@@ -3,15 +3,20 @@
     "version": 3,
     "endpoints": [
             {
-                "endpoint": "/student/list",
+                "endpoint": "/student/list/",
                 "method": "GET",
                 "backend": [
                 {
-                    "url_pattern": "/",
+                    "url_pattern": "/list/",
                     "method": "GET",
                     "host": [
                         "http://localhost:5000"
-                    ]
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
                 }
                 ]
             }
