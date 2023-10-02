@@ -10,7 +10,7 @@
                     "url_pattern": "/",
                     "method": "GET",
                     "host": [
-                        "http://localhost:5000/"
+                        "http://localhost:5000"
                     ]
                 }
                 ]
