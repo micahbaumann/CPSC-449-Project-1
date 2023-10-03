@@ -37,6 +37,60 @@
                     }
                 }
                 ]
+            },
+            {
+                "endpoint": "/student/enroll/{studentid}/{classid}/",
+                "method": "POST",
+                "backend": [
+                {
+                    "url_pattern": "/enroll/{studentid}/{classid}/",
+                    "method": "POST",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/",
+                "method": "POST",
+                "backend": [
+                {
+                    "url_pattern": "/",
+                    "method": "POST",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/registrar/freeze/",
+                "method": "PUT",
+                "backend": [
+                {
+                    "url_pattern": "/freeze/",
+                    "method": "PUT",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
             }
         ]
 }
