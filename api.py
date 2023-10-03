@@ -4,6 +4,7 @@ import contextlib
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
+from fastapi import HTTPException
 
 
 class Settings(BaseSettings, env_file=".env", extra="ignore"):
@@ -63,17 +64,33 @@ def view_waitlist_position(studentid: int, classid: str, db: sqlite3.Connection 
 def view_enrolled(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
     return {}
 
-@app.get("dropped/{instructorid}/{classid}")
-def view_dropped(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
-    return {}
+#View students who have dropped the class
+@app.get("/instructor/dropped/{instructorid}/{classid}")
+def view_dropped_students(instructorid: int, classid: int, db: sqlite3.Connection = Depends(get_db)):
+    query = "SELECT StudentID FROM StudentClasses WHERE ClassID = ? AND SectionID = ? AND EnrollmentStatus = 'Dropped'"
+    dropped_students = db.execute(query, (classid, instructorid)).fetchall()
+    if not dropped_students:
+        raise HTTPException(status_code=404, detail="No dropped students found for this class.")
+    return {"Dropped Students": [student["StudentID"] for student in dropped_students]}
 
-@app.delete("drop/{instructorid}/{classid}/{studentid}")
-def drop_student(instructorid: int, classid: str,studentid,int, db: sqlite3.Connection = Depends(get_db)):
-    return {}
+#Drop students administratively (e.g. if they do not show up to class)
+@app.delete("/instructor/drop/{instructorid}/{classid}/{studentid}")
+def drop_student_administratively(instructorid: int, classid: int, studentid: int, db: sqlite3.Connection = Depends(get_db)):
+    query = "UPDATE StudentClasses SET EnrollmentStatus = 'Dropped' WHERE StudentID = ? AND ClassID = ? AND SectionID = ?"
+    result = db.execute(query, (studentid, classid, instructorid))
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Student, class, or section not found.")
+    return {"message": f"Student {studentid} has been administratively dropped from class {classid}"}
 
-
-
-
+# View the current waiting list for the course
+@app.get("/instructor/waitlist/{instructorid}/{classid}")
+def view_waitlist(instructorid: int, classid: int, db: sqlite3.Connection = Depends(get_db)):
+    query = "SELECT StudentID, Position FROM Waitlist WHERE ClassID = ? AND SectionID = ? ORDER BY Position"
+    waitlist = db.execute(query, (classid, instructorid)).fetchall()
+    if not waitlist:
+        raise HTTPException(status_code=404, detail="No students found in the waitlist for this class.")
+    return {"Waitlist": [{"student_id": student["StudentID"], "position": student["Position"]} for student in waitlist]}
 
 ### Registrar related endpoints
 
