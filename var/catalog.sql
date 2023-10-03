@@ -2,12 +2,14 @@ PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 
 CREATE TABLE Classes (
-    CourseCode VARCHAR(5) PRIMARY KEY NOT NULL UNIQUE,
+    ClassID VARCHAR(5) PRIMARY KEY NOT NULL UNIQUE,
     SectionNumber VARCHAR(5)NOT NULL,
     Name VARCHAR(100),
     InstructorID INT,
     CurrentEnrollment INT,
-    MaximumEnrollment INT
+    MaximumEnrollment INT,
+    WaitlistCount INT,
+    WaitlistMaximum INT
 );
 
 CREATE TABLE Students (
@@ -36,9 +38,9 @@ CREATE TABLE Freeze (
 );
 
 INSERT INTO Classes VALUES
-("120A",5,'Introduction to Programming',1,15,30),
-("121",5,'Object-Oriented Programming',1,30,30),
-("131",5,'Data Structures',1,25,30);
+("120A",5,'Introduction to Programming',1,15,30,0,30),
+("121",5,'Object-Oriented Programming',1,30,30,0,30),
+("131",5,'Data Structures',1,25,30,0,30);
 
 INSERT INTO Students VALUES ("001"),("002"),("003"), ("004"),("005"),("006"),("007"),("008"),("009"),("010");
 
@@ -51,5 +53,8 @@ INSERT INTO Instructors VALUES ("001"),("002"),("003"),("004"),("005");
 
 INSERT INTO InstructorClasses VALUES 
 ("001","120A",5);
+
+
+INSERT INTO Freeze VALUES (0);
 
 COMMIT;
