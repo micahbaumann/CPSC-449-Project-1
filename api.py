@@ -28,7 +28,7 @@ def get_db():
         yield db
 
 settings = Settings()
-frozen = Frozen()
+frozen = Frozen(is_frozen=False)
 app = FastAPI()
 
 # This is an example endpoint. Change the "/" to the path. For example: "/listclasses"
@@ -56,28 +56,41 @@ def drop_student_from_class(studentid: int, classid: str, db: sqlite3.Connection
 def view_waitlist_position(studentid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
     return {}
 
-
 ### Instructor related endpoints
 
-@app.get("enrolled/{instructorid}/{classid}")
+@app.get("/enrolled/{instructorid}/{classid}")
 def view_enrolled(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
+    enrolled = db.execute("SELECT * FROM ")
     return {}
 
-@app.get("dropped/{instructorid}/{classid}")
+@app.get("/dropped/{instructorid}/{classid}")
 def view_dropped(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
     return {}
 
-@app.delete("drop/{instructorid}/{classid}/{studentid}")
-def drop_student(instructorid: int, classid: str,studentid,int, db: sqlite3.Connection = Depends(get_db)):
+@app.delete("/drop/{instructorid}/{classid}/{studentid}")
+def drop_student(instructorid: int, classid: str,studentid: int, db: sqlite3.Connection = Depends(get_db)):
     return {}
 
-
-
+@app.get("/waitlist/{instructorid}/{classid}/{studentid}")
+def view_waitlist(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
+    return {}
 
 
 ### Registrar related endpoints
+@app.post("/add/{classid}/{sectionid}")
+def add_class(classid: str, sectionid: str, db: sqlite3.Connection = Depends(get_db)):
+    return {}
+
+@app.post("/remove/{classid}/{sectionid}")
+def remove_class(classid: str, sectionid: str, db: sqlite3.Connection = Depends(get_db)):
+    return {}
 
 @app.put("/freeze/")
-def view_waitlist_position():
+def freeze_enrollment():
     frozen.is_frozen = True
-    return {}
+    return {"Enrollment Frozen": frozen.is_frozen}
+
+@app.get("/checkfrozen/")
+def check_frozen_status():
+    return {"Enrollment Frozen": frozen.is_frozen}
+

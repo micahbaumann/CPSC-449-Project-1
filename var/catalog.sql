@@ -3,7 +3,7 @@ BEGIN TRANSACTION;
 
 CREATE TABLE Classes (
     CourseCode VARCHAR(5) PRIMARY KEY NOT NULL UNIQUE,
-    SectionNumber INT SECONDARY KEY NOT NULL,
+    SectionNumber VARCHAR(5)NOT NULL,
     Name VARCHAR(100),
     InstructorID INT,
     CurrentEnrollment INT,
