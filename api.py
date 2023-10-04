@@ -10,18 +10,6 @@ class Settings(BaseSettings, env_file=".env", extra="ignore"):
     database: str
     logging_config: str
 
-class Frozen(BaseModel):
-    IsFrozen: bool
-
-class Classes(BaseModel):
-    Department: str
-    class_code: str
-    section_number: int
-    name: str
-    Instructor: int
-    Current_enrollment: int
-    Maximum_enrollment: int
-
 def get_db():
     with contextlib.closing(sqlite3.connect(settings.database)) as db:
         db.row_factory = sqlite3.Row
