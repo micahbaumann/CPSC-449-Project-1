@@ -1,7 +1,7 @@
 import sqlite3
 import contextlib
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
@@ -10,8 +10,8 @@ class Settings(BaseSettings, env_file=".env", extra="ignore"):
     database: str
     logging_config: str
 
-class Frozen(BaseSettings, env_file=".env", extra="ignore"):
-    is_frozen: bool
+class Frozen(BaseModel):
+    IsFrozen: bool
 
 class Classes(BaseModel):
     Department: str
@@ -28,7 +28,6 @@ def get_db():
         yield db
 
 settings = Settings()
-frozen = Frozen(is_frozen=False)
 app = FastAPI()
 
 # This is an example endpoint. Change the "/" to the path. For example: "/listclasses"
@@ -85,12 +84,38 @@ def add_class(classid: str, sectionid: str, db: sqlite3.Connection = Depends(get
 def remove_class(classid: str, sectionid: str, db: sqlite3.Connection = Depends(get_db)):
     return {}
 
-@app.put("/freeze/")
-def freeze_enrollment():
-    frozen.is_frozen = True
-    return {"Enrollment Frozen": frozen.is_frozen}
+@app.put("/freeze/{isfrozen}/")
+def freeze_enrollment(isfrozen: str, db: sqlite3.Connection = Depends(get_db)):
+    if (isfrozen.lower() == "true"):
+        db.execute("UPDATE Freeze SET IsFrozen = true")
+        db.commit()
+    elif (isfrozen.lower() == "false"):
+        db.execute("UPDATE Freeze SET IsFrozen = false")
+        db.commit()
+    else:
+        raise HTTPException(status_code=500, detail="Freeze must be true or false.")
+    
+    checkFrozen = db.execute("SELECT IsFrozen FROM Freeze").fetchone()
+    if (checkFrozen[0] == 1):
+        checkFrozen = True
+    else:
+        checkFrozen = False
+    return {"Enrollment Frozen": checkFrozen}
 
 @app.get("/checkfrozen/")
-def check_frozen_status():
-    return {"Enrollment Frozen": frozen.is_frozen}
+def check_frozen_status(db: sqlite3.Connection = Depends(get_db)):
+    checkFrozen = db.execute("SELECT IsFrozen FROM Freeze").fetchone()
+    if (checkFrozen[0] == 1):
+        checkFrozen = True
+    else:
+        checkFrozen = False
+    return {"Enrollment Frozen": checkFrozen}
+
+@app.put("/change/{classid}/{sectionid}/{newprofessorid}/")
+def change_prof(classid: str, sectionid: str, newprofessorid: str, db: sqlite3.Connection = Depends(get_db)):
+    db.execute("UPDATE Classes SET InstructorID=? WHERE ClassID=? AND SectionNumber=?", (newprofessorid, classid, sectionid))
+    db.execute("UPDATE InstructorClasses SET InstructorID=? WHERE ClassID=? AND SectionID=?", (newprofessorid, classid, sectionid))
+    db.commit()
+    checkProf = db.execute("SELECT * FROM Classes WHERE ClassID=? AND SectionNumber=?", (classid, sectionid)).fetchone()
+    return {"Professor Class": checkProf}
 
