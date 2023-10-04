@@ -10,18 +10,6 @@ class Settings(BaseSettings, env_file=".env", extra="ignore"):
     database: str
     logging_config: str
 
-class Frozen(BaseModel):
-    IsFrozen: bool
-
-class Classes(BaseModel):
-    Department: str
-    class_code: str
-    section_number: int
-    name: str
-    Instructor: int
-    Current_enrollment: int
-    Maximum_enrollment: int
-
 def get_db():
     with contextlib.closing(sqlite3.connect(settings.database)) as db:
         db.row_factory = sqlite3.Row
@@ -40,7 +28,10 @@ def greet():
 
 @app.get("/list/")
 def list_open_classes(db: sqlite3.Connection = Depends(get_db)):
-    classes = db.execute("SELECT * FROM Classes WHERE Classes.CurrentEnrollment < Classes.MaximumEnrollment")
+    if (db.execute("SELECT IsFrozen FROM Freeze").fetchone()[0] == 1):
+        return {"Classes": []}
+
+    classes = db.execute("SELECT * FROM Classes WHERE Classes.CurrentEnrollment < Classes.MaximumEnrollment OR WaitlistCount < WaitlistMaximum")
     return {"Classes": classes.fetchall()}
 
 @app.post("/enroll/{studentid}/{classid}")
