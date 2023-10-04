@@ -40,7 +40,10 @@ def greet():
 
 @app.get("/list/")
 def list_open_classes(db: sqlite3.Connection = Depends(get_db)):
-    classes = db.execute("SELECT * FROM Classes WHERE Classes.CurrentEnrollment < Classes.MaximumEnrollment")
+    if (db.execute("SELECT IsFrozen FROM Freeze").fetchone()[0] == 1):
+        return {"Classes": []}
+
+    classes = db.execute("SELECT * FROM Classes WHERE Classes.CurrentEnrollment < Classes.MaximumEnrollment OR WaitlistCount < WaitlistMaximum")
     return {"Classes": classes.fetchall()}
 
 @app.post("/enroll/{studentid}/{classid}")
