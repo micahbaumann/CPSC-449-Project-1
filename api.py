@@ -11,7 +11,7 @@ class Settings(BaseSettings, env_file=".env", extra="ignore"):
     logging_config: str
 
 class Frozen(BaseModel):
-    is_frozen: bool
+    IsFrozen: bool
 
 class Classes(BaseModel):
     Department: str
@@ -28,7 +28,6 @@ def get_db():
         yield db
 
 settings = Settings()
-frozen = Frozen(is_frozen=False)
 app = FastAPI()
 
 # This is an example endpoint. Change the "/" to the path. For example: "/listclasses"
