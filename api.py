@@ -135,7 +135,7 @@ def remove_class(classid: str, sectionid: str, db: sqlite3.Connection = Depends(
     db.commit()
     return {"Removed" : f"Course {classid} Section {sectionid}"}
 
-@app.put("/freeze/{isfrozen}", status_code=status.HTTP_201_CREATED)
+@app.put("/freeze/{isfrozen}", status_code=status.HTTP_201_CREATED) # Done
 def freeze_enrollment(isfrozen: str, db: sqlite3.Connection = Depends(get_db)):
     if (isfrozen.lower() == "true"):
         db.execute("UPDATE Freeze SET IsFrozen = true")
@@ -144,7 +144,7 @@ def freeze_enrollment(isfrozen: str, db: sqlite3.Connection = Depends(get_db)):
         db.execute("UPDATE Freeze SET IsFrozen = false")
         db.commit()
     else:
-        raise HTTPException(status_code=500, detail="Freeze must be true or false.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Freeze must be true or false.")
     
     checkFrozen = db.execute("SELECT IsFrozen FROM Freeze").fetchone()
     if (checkFrozen[0] == 1):
@@ -162,7 +162,7 @@ def check_frozen_status(db: sqlite3.Connection = Depends(get_db)):
         checkFrozen = False
     return {"Enrollment Frozen": checkFrozen}
 
-@app.put("/change/{classid}/{newprofessorid}", status_code=status.HTTP_201_CREATED)
+@app.put("/change/{classid}/{newprofessorid}", status_code=status.HTTP_201_CREATED) # Done
 def change_prof(classid: int, newprofessorid: int, db: sqlite3.Connection = Depends(get_db)):
     db.execute("UPDATE Classes SET InstructorID=? WHERE ClassID=?", (newprofessorid, classid))
     db.execute("UPDATE InstructorClasses SET InstructorID=? WHERE ClassID=?", (newprofessorid, classid))
