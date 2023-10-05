@@ -1,36 +1,50 @@
-PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 
 CREATE TABLE Classes (
-    ClassID VARCHAR(5) PRIMARY KEY NOT NULL UNIQUE,
-    SectionNumber VARCHAR(5)NOT NULL,
+    ClassID INT PRIMARY KEY NOT NULL UNIQUE,
+    CourseCode VARCHAR(5) NOT NULL,
+    SectionNumber INT NOT NULL,
     Name VARCHAR(100),
-    InstructorID INT,
-    CurrentEnrollment INT,
+    InstructorID INT NOT NULL,
     MaximumEnrollment INT,
     WaitlistCount INT,
     WaitlistMaximum INT
 );
-
 CREATE TABLE Students (
-    StudentID VARCHAR(5) PRIMARY KEY NOT NULL UNIQUE
+    StudentID INT PRIMARY KEY NOT NULL UNIQUE
 );
 
-CREATE TABLE StudentClasses (
-    StudentID VARCHAR(5) PRIMARY KEY NOT NULL,
-    ClassID VARCHAR(5),
-    SectionID VARCHAR(5),
-    EnrollmentStatus INT
+CREATE TABLE Enrollments (
+    EnrollmentID INTEGER         NOT NULL PRIMARY KEY AUTOINCREMENT,
+    StudentID VARCHAR(5)         NOT NULL,
+    ClassID VARCHAR(5)           NOT NULL,
+    SectionNumber INT            NOT NULL,
+    EnrollmentStatus VARCHAR(25) NOT NULL DEFAULT "ENROLLED",
+    FOREIGN KEY (StudentID) REFERENCES Students(StudentID),
+    FOREIGN KEY (ClassID, SectionNumber) REFERENCES Courses(ClassID, SectionNumber)
 );
 
 CREATE TABLE Instructors (
-    InstructorID VARCHAR(5) PRIMARY KEY NOT NULL UNIQUE
+    InstructorID INT PRIMARY KEY NOT NULL UNIQUE
 );
 
 CREATE TABLE InstructorClasses (
-    InstructorID VARCHAR(5) PRIMARY KEY NOT NULL,
-    ClassID VARCHAR(5),
-    SectionID VARCHAR(5)
+    InstructorClassesID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    InstructorID INT            NOT NULL,
+    ClassID INT                 NOT NULL,
+    SectionNumber INT           NOT NULL,
+    FOREIGN KEY (InstructorID) REFERENCES Instructors(InstructorID),
+    FOREIGN KEY (ClassID, SectionNumber) REFERENCES Courses(ClassID, SectionNumber)
+);
+
+CREATE TABLE Waitlists (
+    WaitlistID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    StudentID INT      NOT NULL,
+    ClassID INT        NOT NULL,
+    SectionNumber INT  NOT NULL,
+    Position INT       NOT NULL,
+    FOREIGN KEY (StudentID) REFERENCES Students(StudentID),
+    FOREIGN KEY (ClassID, SectionNumber) REFERENCES Courses(ClassID, SectionNumber)
 );
 
 CREATE TABLE Freeze (
@@ -38,22 +52,30 @@ CREATE TABLE Freeze (
 );
 
 INSERT INTO Classes VALUES
-("120A",5,'Introduction to Programming',1,15,30,0,30),
-("121",5,'Object-Oriented Programming',1,30,30,0,30),
-("131",5,'Data Structures',1,25,30,0,30);
+(1,"120A",5,'Introduction to Programming',1,30,0,30),
+(2,"121", 5,'Object-Oriented Programming',1,30,0,30),
+(3,"131", 5,'Data Structures',            2,30,0,30),
+(4,"223P",5,'Intro to Python Programming',3,30,0,30);
 
-INSERT INTO Students VALUES ("001"),("002"),("003"), ("004"),("005"),("006"),("007"),("008"),("009"),("010");
+INSERT INTO Students VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
 
-INSERT INTO StudentClasses VALUES
-("001", "120A", 5, 0),
-("002", "121",  5, 0);
+INSERT INTO Enrollments VALUES
+(1,1,1,5,"ENROLLED"),
+(2,2,2,5,"ENROLLED"),
+(3,2,1,5,"ENROLLED");
 
+INSERT INTO Waitlists VALUES
 
-INSERT INTO Instructors VALUES ("001"),("002"),("003"),("004"),("005");
+(1,1,1,1,1),
+(2,2,2,1,2),
+(3,3,1,1,5);
+INSERT INTO Instructors VALUES (1),(2),(3),(4),(5);
 
 INSERT INTO InstructorClasses VALUES 
-("001","120A",5);
-
+(1,1,1,5),
+(2,2,1,5),
+(3,3,3,5),
+(4,4,4,5);
 
 INSERT INTO Freeze VALUES (0);
 
