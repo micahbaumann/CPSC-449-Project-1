@@ -3,15 +3,17 @@
     "version": 3,
     "endpoints": [
             {
-                "endpoint": "/student/list/",
+                "endpoint": "/student/list",
                 "method": "GET",
+                "output_encoding": "no-op",
                 "backend": [
                 {
-                    "url_pattern": "/list/",
+                    "url_pattern": "/list",
                     "method": "GET",
                     "host": [
                         "http://localhost:5000"
                     ],
+                    "encoding": "no-op",
                     "extra_config": {
                         "backend/http": {
                             "return_error_details": "backend_alias"
@@ -21,69 +23,37 @@
                 ]
             },
             {
-                "endpoint": "/",
-                "method": "GET",
-                "backend": [
-                {
-                    "url_pattern": "/",
-                    "method": "GET",
-                    "host": [
-                        "http://localhost:5000"
-                    ],
-                    "extra_config": {
-                        "backend/http": {
-                            "return_error_details": "backend_alias"
-                        }
-                    }
-                }
-                ]
-            },
-            {
-                "endpoint": "/student/enroll/{studentid}/{classid}/",
-                "method": "POST",
-                "backend": [
-                {
-                    "url_pattern": "/enroll/{studentid}/{classid}/",
-                    "method": "POST",
-                    "host": [
-                        "http://localhost:5000"
-                    ],
-                    "extra_config": {
-                        "backend/http": {
-                            "return_error_details": "backend_alias"
-                        }
-                    }
-                }
-                ]
-            },
-            {
-                "endpoint": "/",
-                "method": "POST",
-                "backend": [
-                {
-                    "url_pattern": "/",
-                    "method": "POST",
-                    "host": [
-                        "http://localhost:5000"
-                    ],
-                    "extra_config": {
-                        "backend/http": {
-                            "return_error_details": "backend_alias"
-                        }
-                    }
-                }
-                ]
-            },
-            {
-                "endpoint": "/registrar/freeze/",
+                "endpoint": "/registrar/freeze/{isfrozen}",
                 "method": "PUT",
+                "output_encoding": "no-op",
                 "backend": [
                 {
-                    "url_pattern": "/freeze/",
+                    "url_pattern": "/freeze/{isfrozen}",
                     "method": "PUT",
                     "host": [
                         "http://localhost:5000"
                     ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/registrar/change/{classid}/{newprofessorid}",
+                "method": "PUT",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/change/{classid}/{newprofessorid}",
+                    "method": "PUT",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
                     "extra_config": {
                         "backend/http": {
                             "return_error_details": "backend_alias"

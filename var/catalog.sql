@@ -11,7 +11,9 @@ CREATE TABLE Classes (
     WaitlistMaximum INT
 );
 CREATE TABLE Students (
-    StudentID INT PRIMARY KEY NOT NULL UNIQUE
+    StudentID INT PRIMARY KEY NOT NULL UNIQUE,
+    Name VARCHAR(100),
+    Email VARCHAR(100)
 );
 
 CREATE TABLE Enrollments (
@@ -57,7 +59,17 @@ INSERT INTO Classes VALUES
 (3,"131", 5,'Data Structures',            2,30,0,30),
 (4,"223P",5,'Intro to Python Programming',3,30,0,30);
 
-INSERT INTO Students VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+INSERT INTO Students VALUES 
+(1,  "Fara Smith", "fsmith@csu.fullerton.edu"),
+(2,  "Steve Jobs", "sjobs@csu.fullerton.edu"),
+(3,  "Andy Jones", "ajones@csu.fullerton.edu"),
+(4,  "Tim Raft",   "traft@csu.fullerton.edu"),
+(5,  "Elizabeth Barnes", "ebarnes@csu.fullerton.edu"),
+(6,  "George Derns", "gderns@csu.fullerton.edu"),
+(7,  "Pheobe Essek", "pessek@fsmithcsu.fullerton.edu"),
+(8,  "Earl Poppins", "epoppins@csu.fullerton.edu"),
+(9,  "Sarah Colyt", "fsmith@csu.fullerton.edu"),
+(10, "Anna Kant", "akant@csu.fullerton.edu");
 
 INSERT INTO Enrollments VALUES
 (1,1,1,5,"ENROLLED"),
