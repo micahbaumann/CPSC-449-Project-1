@@ -50,8 +50,10 @@ def view_waitlist_position(studentid: int, classid: str, db: sqlite3.Connection 
 
 @app.get("/enrolled/{instructorid}/{classid}")
 def view_enrolled(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
-    enrolled = db.execute("SELECT * FROM ")
-    return {}
+    enrolled = db.execute("SELECT CurrentEnrollment FROM Classes WHERE InstructorID = ? AND ClassID = ?", (instructorid,classid)).fetchone()
+    if not enrolled:
+            return{"message" : f"There are no students enrolled in instructor: {instructorid } with classID: {classid}"}
+    return {"Enrolled": enrolled}
 
 @app.get("/dropped/{instructorid}/{classid}")
 def view_dropped(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
@@ -69,11 +71,15 @@ def view_waitlist(instructorid: int, classid: str, db: sqlite3.Connection = Depe
 ### Registrar related endpoints
 @app.post("/add/{classid}/{sectionid}")
 def add_class(classid: str, sectionid: str, db: sqlite3.Connection = Depends(get_db)):
-    return {}
+    db.execute("INSERT INTO Classes (ClassID,SectionNumber) VALUES(classid, sectionid)")
+    db.commit
+    return {"New Class Added":f"Course {classid} Section {sectionid}"}
 
 @app.post("/remove/{classid}/{sectionid}")
 def remove_class(classid: str, sectionid: str, db: sqlite3.Connection = Depends(get_db)):
-    return {}
+    db.execute("DELETE FROM Classes WHERE ClassID ?= AND SectionNumber ?=", (classid, sectionid))
+    db.commit()
+    return {"Removed" : f"Course {classid} Section {sectionid}"}
 
 @app.put("/freeze/{isfrozen}/")
 def freeze_enrollment(isfrozen: str, db: sqlite3.Connection = Depends(get_db)):
