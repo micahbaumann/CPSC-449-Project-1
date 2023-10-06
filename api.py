@@ -1,10 +1,12 @@
 import sqlite3
 import contextlib
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
+WAITLIST_MAXIMUM = 15
+MAXIMUM_WAITLISTED_CLASSES = 3
 
 class Settings(BaseSettings, env_file=".env", extra="ignore"):
     database: str
@@ -15,10 +17,16 @@ def get_db():
         db.row_factory = sqlite3.Row
         yield db
 
-WAITLIST_MAXIMUM = 15
-
 settings = Settings()
 app = FastAPI()
+
+def check_id_exists_in_table(id_name: str,id_val: int, table_name: str, db: sqlite3.Connection = Depends(get_db)) -> bool:
+    """return true if value found, false if not found"""
+    vals = db.execute(f"SELECT * FROM {table_name} WHERE {id_name} = ?",(id_val,)).fetchone()
+    if vals:
+        return True
+    else:
+        return False
 
 # This is an example endpoint. Change the "/" to the path. For example: "/listclasses"
 # For each new endpoint here, create a new endpoint in the etc/krakend.json file
@@ -64,23 +72,47 @@ def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sq
 
     return {"message": f"Student {studentid} enrolled in class {classid}"}
 
-@app.delete("/waitlistdrop/{studentid}/{classid}")
-def drop_student_from_class(studentid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
-    # Remove student from the class
-    db.execute(f"DELETE FROM Enrollments WHERE StudentID = {studentid} AND ClassID = {classid}")
+@app.delete("/enrollmentdrop/{studentid}/{classid}") # Done
+def drop_student_from_class(studentid: int, classid: int, response: Response, db: sqlite3.Connection = Depends(get_db)):
+    # Try to Remove student from the class
+    try:
+        dropped_student = db.execute(f"SELECT StudentID FROM Enrollments WHERE StudentID = {studentid} AND ClassID = {classid}").fetchone()
+    except sqlite3.IntegrityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_40,
+            detail={"ErrorType": type(e).__name__, "ErrorMessage": str(e)}
+        )
+   
+    query = db.execute(f"UPDATE Enrollments SET EnrollmentStatus = 'DROPPED' WHERE StudentID = {studentid} AND ClassID = {classid}")
     db.commit()
+    # Add student to class if there are students in the waitlist for this course
+    next_on_waitlist = db.execute(f"SELECT * FROM Waitlists WHERE ClassID = {classid} ORDER BY Position ASC").fetchone()
+    if next_on_waitlist:
+        db.execute(f"DELETE FROM Waitlists WHERE StudentID = {studentid} AND ClassID = {classid}")
+        db.execute(f"  INSERT INTO Enrollments(StudentID, ClassID, SectionNumber,EnrollmentStatus) \
+                       VALUES ({studentid}, {classid}, {dropped_student['SectionNumber'],'ENROLLED'})")
+        db.execute("UPDATE Classes SET WaitlistCount = WaitlistCount + 1 WHERE ClassID = ?", (classid,))
+        db.commit()
+        return {"Result": [
+            {"Student dropped from class": dropped_student}, 
+            {"Student added from waitlist": next_on_waitlist},
+        ]}
+    if dropped_student:
+        return {"Student dropped from class": dropped_student}
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student and class combination not found")
+        #return {"Result": "Student and class combination not found"}
 
-    # Add student to class if there are students in the waitlist
-    waitlist_count = db.execute(f"SELECT COUNT(StudentID) FROM Waitlists WHERE ClassID = {classid}").fetchone()[0]
-    #if waitlist_count > 0:
-        #db.execute("SELECT MAX() FROM Enrollments")
-    
-    return {"Student dropped": True}
-
-@app.delete("/enrollmentdrop/{studentid}/{classid}") # Logan
-def remove_student_from_waitlist(studentid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
-    #???
-    return {}
+@app.delete("/waitlistdrop/{studentid}/{classid}") # Logan
+def remove_student_from_waitlist(studentid: int, classid: int, db: sqlite3.Connection = Depends(get_db)):
+    exists = db.execute(f"SELECT * FROM Waitlists WHERE StudentID = {studentid} AND ClassID = {classid}").fetchone()
+    if exists:
+        db.execute(f"DELETE FROM Waitlists WHERE StudentID = {studentid} AND ClassID = {classid}")
+        db.execute("UPDATE Classes SET WaitlistCount = WaitlistCount - 1 WHERE ClassID = ?", (classid,))
+        db.commit()
+        return {"Element removed": exists}
+    else:
+        return {"Error": "No such student found in the given class on the waitlist"}
 
 @app.get("/waitlist/{studentid}/{classid}") # Janhvi
 def view_waitlist_position(studentid: int, classid: int, sectionid: int, db: sqlite3.Connection = Depends(get_db)):
@@ -94,32 +126,38 @@ def view_waitlist_position(studentid: int, classid: int, sectionid: int, db: sql
     
 ### Instructor related endpoints
 
-@app.get("/enrolled/{instructorid}/{classid}") # Logan
-def view_enrolled(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
-    enrolled = db.execute(f"SELECT * FROM Students (SELECT c.ClassID\
-                            FROM Instructors as i INNER JOIN Classes as c \
-                            ON c.InstructorID = i.InstructorID \
-                            WHERE i.InstructorID = {instructorid} AND c.Classid = {classid})")
+@app.get("/enrolled/{instructorid}/{classid}/{sectionid}") # Logan
+def view_enrolled(instructorid: int, classid: int, sectionid: int, db: sqlite3.Connection = Depends(get_db)):
+    enrolled = db.execute(f"SELECT StudentID FROM Enrollments as e INNER JOIN \
+                                (SELECT ClassID FROM Classes WHERE InstructorID = {instructorid} AND ClassID = {classid}) as ic \
+                            ON e.ClassID = ic.ClassID")
     
     return {"All students enrolled in this instructor's classes" : enrolled.fetchall()}
 
-@app.get("/dropped/{instructorid}/{classid}")
-def view_dropped(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
-    res = db.execute(f" SELECT * FROM Enrollments as e \
-                        WHERE e.ClassID = {classid} \
-                        AND e.EnrollmentStatus = \"NOT ENROLLED\"")
-    
+@app.get("/instructor/dropped/{instructorid}/{classid}/{sectionid}")
+def view_dropped_students(instructorid: int, classid: int, sectionid: int, db: sqlite3.Connection = Depends(get_db)):
+    query = "SELECT StudentID FROM Enrollments WHERE ClassID = ? AND SectionNumber = ? AND EnrollmentStatus = 'DROPPED'"
+    dropped_students = db.execute(query, (classid, sectionid)).fetchall()
+    if not dropped_students:
+        raise HTTPException(status_code=404, detail="No dropped students found for this class.")
+    return {"Dropped Students": [student["StudentID"] for student in dropped_students]}
 
+@app.delete("/instructor/drop/{instructorid}/{classid}/{studentid}")
+def drop_student_administratively(instructorid: int, classid: int, studentid: int, db: sqlite3.Connection = Depends(get_db)):
+    query = "UPDATE Enrollments SET EnrollmentStatus = 'DROPPED' WHERE StudentID = ? AND ClassID = ?"
+    result = db.execute(query, (studentid, classid))
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Student, class, or section not found.")
+    return {"message": f"Student {studentid} has been administratively dropped from class {classid}"}
 
-    return {"Dropped students": res.fetchall()}
-
-@app.delete("/drop/{instructorid}/{classid}/{studentid}")
-def drop_student(instructorid: int, classid: str,studentid: int, db: sqlite3.Connection = Depends(get_db)):
-    return {}
-
-@app.get("/waitlist/{instructorid}/{classid}/{studentid}")
-def view_waitlist(instructorid: int, classid: str, db: sqlite3.Connection = Depends(get_db)):
-    return {}
+@app.get("/waitlist/{instructorid}/{classid}/{sectionid}")
+def view_waitlist(instructorid: int, classid: str, sectionid: int, db: sqlite3.Connection = Depends(get_db)):
+    query = "SELECT StudentID, Position FROM Waitlists WHERE ClassID = ? AND SectionNumber =? AND InstructorID = ? ORDER BY Position"
+    waitlist = db.execute(query, (classid, sectionid, instructorid)).fetchall()
+    if not waitlist:
+        raise HTTPException(status_code=404, detail="No students found in the waitlist for this class.")
+    return {"Waitlist": [{"student_id": student["StudentID"], "position": student["Position"]} for student in waitlist]}
 
 ### Registrar related endpoints
 
@@ -135,7 +173,7 @@ def remove_class(classid: str, sectionid: str, db: sqlite3.Connection = Depends(
     db.commit()
     return {"Removed" : f"Course {classid} Section {sectionid}"}
 
-@app.put("/freeze/{isfrozen}", status_code=status.HTTP_201_CREATED) # Done
+@app.put("/freeze/{isfrozen}", status_code=status.HTTP_204_NO_CONTENT) # Done
 def freeze_enrollment(isfrozen: str, db: sqlite3.Connection = Depends(get_db)):
     if (isfrozen.lower() == "true"):
         db.execute("UPDATE Freeze SET IsFrozen = true")
@@ -145,13 +183,6 @@ def freeze_enrollment(isfrozen: str, db: sqlite3.Connection = Depends(get_db)):
         db.commit()
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Freeze must be true or false.")
-    
-    checkFrozen = db.execute("SELECT IsFrozen FROM Freeze").fetchone()
-    if (checkFrozen[0] == 1):
-        checkFrozen = True
-    else:
-        checkFrozen = False
-    return {"Enrollment Frozen": checkFrozen}
 
 @app.get("/checkfrozen")
 def check_frozen_status(db: sqlite3.Connection = Depends(get_db)):
@@ -162,11 +193,22 @@ def check_frozen_status(db: sqlite3.Connection = Depends(get_db)):
         checkFrozen = False
     return {"Enrollment Frozen": checkFrozen}
 
-@app.put("/change/{classid}/{newprofessorid}", status_code=status.HTTP_201_CREATED) # Done
+@app.put("/change/{classid}/{newprofessorid}", status_code=status.HTTP_204_NO_CONTENT) # Done
 def change_prof(classid: int, newprofessorid: int, db: sqlite3.Connection = Depends(get_db)):
-    db.execute("UPDATE Classes SET InstructorID=? WHERE ClassID=?", (newprofessorid, classid))
-    db.execute("UPDATE InstructorClasses SET InstructorID=? WHERE ClassID=?", (newprofessorid, classid))
-    db.commit()
-    checkProf = db.execute("SELECT * FROM Classes WHERE ClassID=?", (classid,)).fetchone()
-    return {"Professor Class": checkProf}
+    valid_instructor_id = check_id_exists_in_table("InstructorID",newprofessorid,"Classes",db)
+    valid_class_id = check_id_exists_in_table("ClassID",classid,"Classes",db)
+    if not valid_instructor_id or not valid_class_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class or Instructor does not exist",
+        )
+    try:
+        db.execute("UPDATE Classes SET InstructorID=? WHERE ClassID=?", (newprofessorid, classid))
+        db.execute("UPDATE InstructorClasses SET InstructorID=? WHERE ClassID=?", (newprofessorid, classid))
+        db.commit()
+    except sqlite3.IntegrityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"type": type(e).__name__, "msg": str(e)},
+        )
 
