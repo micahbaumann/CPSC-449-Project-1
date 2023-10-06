@@ -3,19 +3,19 @@ BEGIN TRANSACTION;
 
 CREATE TABLE Classes (
     ClassID INT NOT NULL UNIQUE,
-    CourseCode VARCHAR(5) NOT NULL,
+    CourseCode VARCHAR(15) NOT NULL DEFAULT 'XXX 001',
     SectionNumber INT NOT NULL,
-    Name VARCHAR(100),
+    Name VARCHAR(100) DEFAULT "Class", 
     InstructorID INT NOT NULL,
-    MaximumEnrollment INT,
-    WaitlistCount INT,
-    WaitlistMaximum INT,
+    MaximumEnrollment INT DEFAULT 30,
+    WaitlistCount INT DEFAULT 0,
+    WaitlistMaximum INT DEFAUlT 30,
     PRIMARY KEY (ClassID, SectionNumber)
 );
 
 INSERT INTO Classes VALUES
-(1,"120A",5,'Introduction to Programming',1,30,0,30),
-(2,"121", 5,'Object-Oriented Programming',1,30,0,30),
+(1,"120A",5,'Introduction to Programming',1,30,2,30),
+(2,"121", 5,'Object-Oriented Programming',1,30,1,30),
 (3,"131", 5,'Data Structures',            2,30,0,30),
 (4,"223P",5,'Intro to Python Programming',3,30,0,30);
 
@@ -47,10 +47,11 @@ CREATE TABLE Enrollments (
     FOREIGN KEY (ClassID, SectionNumber) REFERENCES Classes(ClassID, SectionNumber)
 );
 
-INSERT INTO Enrollments(StudentID,ClassID,SectionNumber) VALUES
-(1,1,5),
-(2,2,5),
-(2,3,5);
+INSERT INTO Enrollments(StudentID,ClassID,SectionNumber,EnrollmentStatus) VALUES
+(1,1,5,"ENROLLED"),
+(2,2,5,"ENROLLED"),
+(2,3,5,"ENROLLED");
+
 
 CREATE TABLE Instructors (
     InstructorID INT PRIMARY KEY NOT NULL UNIQUE
@@ -77,16 +78,18 @@ CREATE TABLE Waitlists (
     WaitlistID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     StudentID INT      NOT NULL,
     ClassID INT        NOT NULL,
+    InstructorID INT   NOT NULL,
     SectionNumber INT  NOT NULL,
     Position INT       NOT NULL,
     FOREIGN KEY (StudentID) REFERENCES Students(StudentID),
+    FOREIGN KEY (InstructorID) REFERENCES Instructors(InstructorID),
     FOREIGN KEY (ClassID, SectionNumber) REFERENCES Classes(ClassID, SectionNumber)
 );
 
-INSERT INTO Waitlists(StudentID,ClassId,SectionNumber,Position) VALUES
-(1,1,5,1),
-(2,2,5,2),
-(3,1,5,5);
+INSERT INTO Waitlists(StudentID,ClassId,InstructorID,SectionNumber,Position) VALUES
+(1,1,1,5,1),
+(2,2,1,5,2),
+(3,1,3,5,5);
 
 CREATE TABLE Freeze (
     IsFrozen BOOLEAN DEFAULT 0

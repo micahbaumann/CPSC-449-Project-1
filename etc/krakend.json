@@ -23,6 +23,206 @@
                 ]
             },
             {
+                "endpoint": "/student/enroll/{studentid}/{classid}/{sectionid}",
+                "method": "POST",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/enroll/{studentid}/{classid}/{sectionid}",
+                    "method": "POST",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/student/remove/{studentid}/{classid}/{sectionid}",
+                "method": "DELETE",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/enrollmentdrop/{studentid}/{classid}/{sectionid}",
+                    "method": "DELETE",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/student/waitlist/drop/{studentid}/{classid}",
+                "method": "DELETE",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/waitlistdrop/{studentid}/{classid}",
+                    "method": "DELETE",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/student/waitlist/{studentid}/{classid}",
+                "method": "GET",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/waitlist/{studentid}/{classid}",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/instructor/enrolled/{instructorid}/{classid}/{sectionid}",
+                "method": "GET",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/enrolled/{instructorid}/{classid}/{sectionid}",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/instructor/dropped/{instructorid}/{classid}/{sectionid}",
+                "method": "GET",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/dropped/{instructorid}/{classid}/{sectionid}",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/instructor/drop/{instructorid}/{classid}/{studentid}",
+                "method": "DELETE",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/drop/{instructorid}/{classid}/{studentid}",
+                    "method": "DELETE",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/instructor/waitlist/{instructorid}/{classid}/{sectionid}",
+                "method": "GET",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/waitlist/{instructorid}/{classid}/{sectionid}",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/registrar/add/{classid}/{sectionid}/{instructorid}",
+                "method": "POST",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/add/{classid}/{sectionid}/{instructorid}",
+                    "method": "POST",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/registrar/remove/{classid}/{sectionid}",
+                "method": "DELETE",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/remove/{classid}/{sectionid}",
+                    "method": "DELETE",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
                 "endpoint": "/registrar/freeze/{isfrozen}",
                 "method": "PUT",
                 "output_encoding": "no-op",
@@ -50,6 +250,62 @@
                 {
                     "url_pattern": "/change/{classid}/{newprofessorid}",
                     "method": "PUT",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+            ,{
+                "endpoint": "/",
+                "method": "GET",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "encoding": "no-op",
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                }
+                ]
+            },
+            {
+                "endpoint": "/table/{tablename}/{limit}",
+                "method": "GET",
+                "output_encoding": "no-op",
+                "backend": [
+                {
+                    "url_pattern": "/table/{tablename}/{limit}",
+                    "method": "GET",
                     "host": [
                         "http://localhost:5000"
                     ],
