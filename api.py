@@ -30,11 +30,6 @@ def check_id_exists_in_table(id_name: str,id_val: int, table_name: str, db: sqli
 
 ### Student related endpoints
 
-@app.get("/table/{tablename}")
-def list_table(tablename: str,db: sqlite3.Connection = Depends(get_db)):
-    res = db.execute(f"SELECT * FROM {tablename}")
-    return {"Result": res.fetchall()}
-
 @app.get("/list") # Done
 def list_open_classes(db: sqlite3.Connection = Depends(get_db)):
     if (db.execute("SELECT IsFrozen FROM Freeze").fetchone()[0] == 1):
@@ -47,11 +42,11 @@ def list_open_classes(db: sqlite3.Connection = Depends(get_db)):
     )
     return {"Classes": classes.fetchall()}
 
-@app.post("/enroll/{studentid}/{classid}/{sectionid}", status_code=status.HTTP_201_CREATED) # Janhvi
+@app.post("/enroll/{studentid}/{classid}/{sectionid}", status_code=status.HTTP_201_CREATED) # Janhvi done
 def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sqlite3.Connection = Depends(get_db)):
-     if (db.execute("SELECT IsFrozen FROM Freeze").fetchone()[0] == 1):
-         return {"message":"Enrollment closed."}
-     else:
+    if (db.execute("SELECT IsFrozen FROM Freeze").fetchone()[0] == 1):
+        return {"message":"Enrollment closed."}
+    else:
         classes = db.execute("SELECT * FROM Classes WHERE ClassID = ?", (classid,)).fetchone()
         if not classes:
             raise HTTPException(
@@ -67,7 +62,7 @@ def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sq
             db.commit()
             return {"message": f"Enrolled student {studentid} in section {class_section} of class {classid}."}
         elif waitlist_count <= WAITLIST_MAXIMUM:
-            if(classes["WaitlistCount"] < 3)
+            if(classes["WaitlistCount"] < 3):
                 max_waitlist_position = db.execute("SELECT MAX(Position) FROM Waitlists WHERE ClassID = ? AND  SectionNumber = ?",(classid,sectionid)).fetchone()[0]
                 print("Position: " + str(max_waitlist_position))
                 db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber, InstructorID, Position) VALUES(?,?,?,?,?)",(studentid, classid, class_section,instructorid,max_waitlist_position + 1))
@@ -77,7 +72,6 @@ def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sq
                 return {"message": f"Cannot enroll in waitlistas already enrolled in 3 classes."}
         else:
             return {"message": f"Unable to enroll in waitlist for the class, reached the maximum number of students"}
-
 
 @app.delete("/enrollmentdrop/{studentid}/{classid}/{sectionid}") # Done
 def drop_student_from_class(studentid: int, classid: int,sectionid: int, db: sqlite3.Connection = Depends(get_db)):
@@ -130,14 +124,18 @@ def remove_student_from_waitlist(studentid: int, classid: int, db: sqlite3.Conne
     
 @app.get("/waitlist/{studentid}/{classid}") # Janhvi DONE
 def view_waitlist_position(studentid: int, classid: int, db: sqlite3.Connection = Depends(get_db)):
-    exists = db.execute("SELECT * FROM Waitlists WHERE StudentID = ? AND ClassID = ?",(studentid,classid)).fetchone()
-    if not exists:
+    position = None
+    position = db.execute("SELECT Position FROM Waitlists WHERE StudentID = ? AND ClassID = ?", (studentid,classid,)).fetchone()
+    
+    if position:
+        message = f"Student {studentid} is on the waitlist for class {classid} in position"
+    else:
+        message = f"Student {studentid} is not on the waitlist for class {classid}"
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"Error": "No such student found in the given class on the waitlist"}
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=message,
         )
-    position = exists["Position"]
-    return {f"{studentid} waitlisted in class {classid} at position {position}" : exists}
+    return {message: position}
     
 ### Instructor related endpoints
 
