@@ -56,13 +56,13 @@ def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sq
         instructorid = classes["InstructorID"]
         count = db.execute("SELECT COUNT(*) FROM Enrollments WHERE ClassID = ?", (classid,)).fetchone()[0]
         waitlist_count = db.execute("SELECT COUNT(*) FROM Waitlists WHERE ClassID = ?", (classid,)).fetchone()[0]
-        print(count)
+        on_waitlist = db.execute("SELECT COUNT(*) FROM Waitlists WHERE StudentID = ?", (studentid,)).fetchone()[0]
         if count <= classes["MaximumEnrollment"]:
             db.execute("INSERT INTO Enrollments(StudentID, ClassID, SectionNumber) VALUES(?,?,?)",(studentid, classid, class_section))
             db.commit()
             return {"message": f"Enrolled student {studentid} in section {class_section} of class {classid}."}
         elif waitlist_count <= WAITLIST_MAXIMUM:
-            if(classes["WaitlistCount"] < 3):
+            if(on_waitlist < 3):
                 max_waitlist_position = db.execute("SELECT MAX(Position) FROM Waitlists WHERE ClassID = ? AND  SectionNumber = ?",(classid,sectionid)).fetchone()[0]
                 print("Position: " + str(max_waitlist_position))
                 db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber, InstructorID, Position) VALUES(?,?,?,?,?)",(studentid, classid, class_section,instructorid,max_waitlist_position + 1))
