@@ -64,12 +64,14 @@ def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sq
         db.commit()
         return {"message": f"Enrolled student {studentid} in section {class_section} of class {classid}."}
     elif waitlist_count <= WAITLIST_MAXIMUM:
-        
-        max_waitlist_position = db.execute("SELECT MAX(Position) FROM Waitlists WHERE ClassID = ? AND  SectionNumber = ?",(classid,sectionid)).fetchone()[0]
-        print("Position: " + str(max_waitlist_position))
-        db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber, InstructorID, Position) VALUES(?,?,?,?,?)",(studentid, classid, class_section,instructorid,max_waitlist_position + 1))
-        db.commit()
-        return {"message": f"Enrolled in waitlist {class_section} of class {classid}."}
+        if(classes["WaitlistCount"] < 3)
+            max_waitlist_position = db.execute("SELECT MAX(Position) FROM Waitlists WHERE ClassID = ? AND  SectionNumber = ?",(classid,sectionid)).fetchone()[0]
+            print("Position: " + str(max_waitlist_position))
+            db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber, InstructorID, Position) VALUES(?,?,?,?,?)",(studentid, classid, class_section,instructorid,max_waitlist_position + 1))
+            db.commit()
+            return {"message": f"Enrolled in waitlist {class_section} of class {classid}."}
+        else:
+            return {"message": f"Cannot enroll in waitlistas already enrolled in 3 classes."}
     else:
         return {"message": f"Unable to enroll in waitlist for the class, reached the maximum number of students"}
 
