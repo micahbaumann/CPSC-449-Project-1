@@ -9,15 +9,16 @@ CREATE TABLE Classes (
     InstructorID INT NOT NULL,
     MaximumEnrollment INT DEFAULT 30,
     WaitlistCount INT DEFAULT 0,
-    WaitlistMaximum INT DEFAUlT 30,
+    WaitlistMaximum INT DEFAUlT 15,
     PRIMARY KEY (ClassID, SectionNumber)
 );
 
 INSERT INTO Classes VALUES
-(1,"120A",5,'Introduction to Programming',1,30,2,30),
-(2,"121", 5,'Object-Oriented Programming',1,30,1,30),
-(3,"131", 5,'Data Structures',            2,30,0,30),
-(4,"223P",5,'Intro to Python Programming',3,30,0,30);
+(1,"120A",5,'Introduction to Programming',1,30,2,15),
+(2,"121", 5,'Object-Oriented Programming',1,30,1,15),
+(3,"131", 5,'Data Structures',            2,30,0,15),
+(4,"223P",5,'Intro to Python Programming',3,30,0,15),
+(5,"223W",5,'Intro to Python Programming Waitlist',3,2,0,15);
 
 CREATE TABLE Students (
     StudentID INT PRIMARY KEY NOT NULL UNIQUE,
@@ -50,7 +51,9 @@ CREATE TABLE Enrollments (
 INSERT INTO Enrollments(StudentID,ClassID,SectionNumber,EnrollmentStatus) VALUES
 (1,1,5,"ENROLLED"),
 (2,2,5,"ENROLLED"),
-(2,3,5,"ENROLLED");
+(2,3,5,"ENROLLED"),
+(3,5,5,"ENROLLED"),
+(2,5,5,"ENROLLED");
 
 
 CREATE TABLE Instructors (

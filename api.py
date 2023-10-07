@@ -1,7 +1,7 @@
 import sqlite3
 import contextlib
 
-from fastapi import FastAPI, Depends, HTTPException, status, Response
+from fastapi import FastAPI, Depends, HTTPException, status
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
@@ -28,15 +28,6 @@ def check_id_exists_in_table(id_name: str,id_val: int, table_name: str, db: sqli
     else:
         return False
 
-@app.get("/table/{tablename}/{limit}") # Remove this before we turn in
-def view_table(tablename: str,limit:int, db: sqlite3.Connection = Depends(get_db)):
-    res = db.execute(f"SELECT * FROM {tablename}")
-    return {tablename: res.fetchmany(limit)}
-
-@app.get("/") # Remove this before we turn in
-def greet():
-    return {"Hello": "World"}
-
 ### Student related endpoints
 
 @app.get("/list") # Done
@@ -53,29 +44,29 @@ def list_open_classes(db: sqlite3.Connection = Depends(get_db)):
 
 @app.post("/enroll/{studentid}/{classid}/{sectionid}", status_code=status.HTTP_201_CREATED) # Janhvi
 def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sqlite3.Connection = Depends(get_db)):
+    enroll_student = db.execute("SELECT StudentID FROM Enrollments WHERE StudentID = ? AND ClassID = ? AND SectionNumber = ?",(studentid,classid,sectionid)).fetchone()
+    if enroll_student:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Student is already enrolled")
     class_data = db.execute("SELECT * FROM Classes WHERE ClassID = ?", (classid,)).fetchone()
-    if not class_data:
+    enrollment_data = db.execute("SELECT COUNT(EnrollmentID) FROM Enrollments WHERE ClassID = ?", (classid,)).fetchone()
+    if not class_data or not enrollment_data:
         raise HTTPException(status_code=404, detail="Class not found")
-    if class_data["CurrentEnrollment"] >= class_data["MaximumEnrollment"]:
+    if enrollment_data["COUNT(EnrollmentID)"] >= class_data["MaximumEnrollment"]:
         if class_data["WaitlistCount"] < class_data["WaitlistMaximum"]:
             db.execute("UPDATE Classes SET WaitlistCount = WaitlistCount + 1 WHERE ClassID = ?", (classid,))
-            db.commit()
-            db.execute("INSERT INTO Waitlists (StudentID, ClassID) VALUES (?, ?)", (studentid, classid))
+            db.execute("INSERT INTO Waitlists (StudentID, ClassID, InstructorID, SectionNumber, Position) VALUES (?, ?, ?, ?, (SELECT WaitlistCount FROM Classes WHERE ClassID = ?))", (studentid, classid, class_data["InstructorID"], sectionid, classid))
             db.commit()
             return {"message": f"Student {studentid} added to the waitlist for class {classid} section {sectionid}"}
         else:
             raise HTTPException(status_code=400, detail="Class and waitlist are full")
 
-    db.execute("UPDATE Classes SET CurrentEnrollment = CurrentEnrollment + 1 WHERE ClassID = ?", (classid,))
+    db.execute("INSERT INTO Enrollments (StudentID, ClassID, SectionNumber) VALUES (?, ?, ?)", (studentid, classid, sectionid))
     db.commit()
 
-    db.execute("INSERT INTO Enrollments (StudentID, ClassID) VALUES (?, ?)", (studentid, classid))
-    db.commit()
-
-    return {"message": f"Student {studentid} enrolled in class {classid}"}
+    return {"message": f"Student {studentid} enrolled in class {classid} with section {sectionid}"}
 
 @app.delete("/enrollmentdrop/{studentid}/{classid}/{sectionid}") # Done
-def drop_student_from_class(studentid: int, classid: int,sectionid: int, response: Response, db: sqlite3.Connection = Depends(get_db)):
+def drop_student_from_class(studentid: int, classid: int,sectionid: int, db: sqlite3.Connection = Depends(get_db)):
     # Try to Remove student from the class
     
     dropped_student = db.execute("SELECT StudentID FROM Enrollments WHERE StudentID = ? AND ClassID = ? AND SectionNumber = ?",(studentid,classid,sectionid)).fetchone()
@@ -160,7 +151,7 @@ def view_dropped_students(instructorid: int, classid: int, sectionid: int, db: s
     dropped_students = db.execute(query, (classid, sectionid)).fetchall()
     if not dropped_students:
         raise HTTPException(status_code=404, detail="No dropped students found for this class.")
-    return {"Dropped Students": [student["StudentID"] for student in dropped_students]}
+    return {"Dropped Students ID": [student["StudentID"] for student in dropped_students]}
 
 @app.delete("/drop/{instructorid}/{classid}/{studentid}") #Arjit DONE
 def drop_student_administratively(instructorid: int, classid: int, studentid: int, db: sqlite3.Connection = Depends(get_db)):
