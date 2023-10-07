@@ -49,31 +49,34 @@ def list_open_classes(db: sqlite3.Connection = Depends(get_db)):
 
 @app.post("/enroll/{studentid}/{classid}/{sectionid}", status_code=status.HTTP_201_CREATED) # Janhvi
 def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sqlite3.Connection = Depends(get_db)):
-    classes = db.execute("SELECT * FROM Classes WHERE ClassID = ?", (classid,)).fetchone()
-    if not classes:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Class not found")
-    class_section = classes["SectionNumber"]
-    instructorid = classes["InstructorID"]
-    count = db.execute("SELECT COUNT(*) FROM Enrollments WHERE ClassID = ?", (classid,)).fetchone()[0]
-    waitlist_count = db.execute("SELECT COUNT(*) FROM Waitlists WHERE ClassID = ?", (classid,)).fetchone()[0]
-    print(count)
-    if count <= classes["MaximumEnrollment"]:
-        db.execute("INSERT INTO Enrollments(StudentID, ClassID, SectionNumber) VALUES(?,?,?)",(studentid, classid, class_section))
-        db.commit()
-        return {"message": f"Enrolled student {studentid} in section {class_section} of class {classid}."}
-    elif waitlist_count <= WAITLIST_MAXIMUM:
-        if(classes["WaitlistCount"] < 3)
-            max_waitlist_position = db.execute("SELECT MAX(Position) FROM Waitlists WHERE ClassID = ? AND  SectionNumber = ?",(classid,sectionid)).fetchone()[0]
-            print("Position: " + str(max_waitlist_position))
-            db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber, InstructorID, Position) VALUES(?,?,?,?,?)",(studentid, classid, class_section,instructorid,max_waitlist_position + 1))
+     if (db.execute("SELECT IsFrozen FROM Freeze").fetchone()[0] == 1):
+         return {"message":"Enrollment closed."}
+     else:
+        classes = db.execute("SELECT * FROM Classes WHERE ClassID = ?", (classid,)).fetchone()
+        if not classes:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Class not found")
+        class_section = classes["SectionNumber"]
+        instructorid = classes["InstructorID"]
+        count = db.execute("SELECT COUNT(*) FROM Enrollments WHERE ClassID = ?", (classid,)).fetchone()[0]
+        waitlist_count = db.execute("SELECT COUNT(*) FROM Waitlists WHERE ClassID = ?", (classid,)).fetchone()[0]
+        print(count)
+        if count <= classes["MaximumEnrollment"]:
+            db.execute("INSERT INTO Enrollments(StudentID, ClassID, SectionNumber) VALUES(?,?,?)",(studentid, classid, class_section))
             db.commit()
-            return {"message": f"Enrolled in waitlist {class_section} of class {classid}."}
+            return {"message": f"Enrolled student {studentid} in section {class_section} of class {classid}."}
+        elif waitlist_count <= WAITLIST_MAXIMUM:
+            if(classes["WaitlistCount"] < 3)
+                max_waitlist_position = db.execute("SELECT MAX(Position) FROM Waitlists WHERE ClassID = ? AND  SectionNumber = ?",(classid,sectionid)).fetchone()[0]
+                print("Position: " + str(max_waitlist_position))
+                db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber, InstructorID, Position) VALUES(?,?,?,?,?)",(studentid, classid, class_section,instructorid,max_waitlist_position + 1))
+                db.commit()
+                return {"message": f"Enrolled in waitlist {class_section} of class {classid}."}
+            else:
+                return {"message": f"Cannot enroll in waitlistas already enrolled in 3 classes."}
         else:
-            return {"message": f"Cannot enroll in waitlistas already enrolled in 3 classes."}
-    else:
-        return {"message": f"Unable to enroll in waitlist for the class, reached the maximum number of students"}
+            return {"message": f"Unable to enroll in waitlist for the class, reached the maximum number of students"}
 
 
 @app.delete("/enrollmentdrop/{studentid}/{classid}/{sectionid}") # Done
