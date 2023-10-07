@@ -44,26 +44,21 @@ def list_open_classes(db: sqlite3.Connection = Depends(get_db)):
 
 @app.post("/enroll/{studentid}/{classid}/{sectionid}", status_code=status.HTTP_201_CREATED) # Janhvi
 def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sqlite3.Connection = Depends(get_db)):
-    enroll_student = db.execute("SELECT StudentID FROM Enrollments WHERE StudentID = ? AND ClassID = ? AND SectionNumber = ?",(studentid,classid,sectionid)).fetchone()
-    if enroll_student:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Student is already enrolled")
-    class_data = db.execute("SELECT * FROM Classes WHERE ClassID = ?", (classid,)).fetchone()
-    enrollment_data = db.execute("SELECT COUNT(EnrollmentID) FROM Enrollments WHERE ClassID = ?", (classid,)).fetchone()
-    if not class_data or not enrollment_data:
-        raise HTTPException(status_code=404, detail="Class not found")
-    if enrollment_data["COUNT(EnrollmentID)"] >= class_data["MaximumEnrollment"]:
-        if class_data["WaitlistCount"] < class_data["WaitlistMaximum"]:
-            db.execute("UPDATE Classes SET WaitlistCount = WaitlistCount + 1 WHERE ClassID = ?", (classid,))
-            db.execute("INSERT INTO Waitlists (StudentID, ClassID, InstructorID, SectionNumber, Position) VALUES (?, ?, ?, ?, (SELECT WaitlistCount FROM Classes WHERE ClassID = ?))", (studentid, classid, class_data["InstructorID"], sectionid, classid))
-            db.commit()
-            return {"message": f"Student {studentid} added to the waitlist for class {classid} section {sectionid}"}
-        else:
-            raise HTTPException(status_code=400, detail="Class and waitlist are full")
-
-    db.execute("INSERT INTO Enrollments (StudentID, ClassID, SectionNumber) VALUES (?, ?, ?)", (studentid, classid, sectionid))
-    db.commit()
-
-    return {"message": f"Student {studentid} enrolled in class {classid} with section {sectionid}"}
+    classes = db.execute("SELECT * FROM Classes WHERE ClassID = ?", (classid,)).fetchone()
+    if not classes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found")
+    class_section = classes["SectionNumber"]
+    count = db.execute("SELECT COUNT(*) FROM Enrollments WHERE ClassID = ?", (classid,)).fetchone()[0]
+    if count <= classes["MaximumEnrollment"]:
+        db.execute("INSERT INTO Enrollments(StudentID, ClassID, SectionNumber) VALUES(?,?,?)",(studentid, classid, class_section))
+        db.commit()
+        return {"message": f"Enrolled student {studentid} in section {class_section} of class {classid}."}
+    else:
+        db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber) VALUES(?,?,?)",(studentid, classid, class_section))
+        db.commit()
+        return {"message": f"Enrolled in waitlist {class_section} of class {classid}."}
 
 @app.delete("/enrollmentdrop/{studentid}/{classid}/{sectionid}") # Done
 def drop_student_from_class(studentid: int, classid: int,sectionid: int, db: sqlite3.Connection = Depends(get_db)):
@@ -116,18 +111,14 @@ def remove_student_from_waitlist(studentid: int, classid: int, db: sqlite3.Conne
     
 @app.get("/waitlist/{studentid}/{classid}") # Janhvi DONE
 def view_waitlist_position(studentid: int, classid: int, db: sqlite3.Connection = Depends(get_db)):
-    position = None
-    position = db.execute("SELECT Position FROM Waitlists WHERE StudentID = ? AND ClassID = ?", (studentid,classid,)).fetchone()
-    
-    if position:
-        message = f"Student {studentid} is on the waitlist for class {classid} in position"
-    else:
-        message = f"Student {studentid} is not on the waitlist for class {classid}"
+    exists = db.execute("SELECT * FROM Waitlists WHERE StudentID = ? AND ClassID = ?",(studentid,classid)).fetchone()
+    if not exists:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"Error": "No such student found in the given class on the waitlist"}
         )
-    return {message: position}
+    position = exists["Position"]
+    return {f"{studentid} waitlisted in class {classid} at position {position}" : exists}
     
 ### Instructor related endpoints
 
