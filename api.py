@@ -124,18 +124,15 @@ def remove_student_from_waitlist(studentid: int, classid: int, db: sqlite3.Conne
     
 @app.get("/waitlist/{studentid}/{classid}") # Janhvi DONE
 def view_waitlist_position(studentid: int, classid: int, db: sqlite3.Connection = Depends(get_db)):
-    position = None
-    position = db.execute("SELECT Position FROM Waitlists WHERE StudentID = ? AND ClassID = ?", (studentid,classid,)).fetchone()
-    
-    if position:
-        message = f"Student {studentid} is on the waitlist for class {classid} in position"
-    else:
-        message = f"Student {studentid} is not on the waitlist for class {classid}"
+    exists = db.execute("SELECT * FROM Waitlists WHERE StudentID = ? AND ClassID = ?",(studentid,classid)).fetchone()
+    if not exists:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"Error": "No such student found in the given class on the waitlist"}
         )
-    return {message: position}
+    position = exists["Position"]
+    return {f"{studentid} waitlisted in class {classid} at position {position}" : exists} 
+
     
 ### Instructor related endpoints
 
