@@ -14,10 +14,10 @@ CREATE TABLE Classes (
 );
 
 INSERT INTO Classes VALUES
-(1,"120A",5,'Introduction to Programming',1,30,2,15),
-(2,"121", 5,'Object-Oriented Programming',1,30,1,15),
-(3,"131", 5,'Data Structures',            2,30,0,15),
-(4,"223P",5,'Intro to Python Programming',3,30,0,15),
+(1,"120A",5,'Introduction to Programming',1,1,2,15),
+(2,"121", 5,'Object-Oriented Programming',1,1,1,15),
+(3,"131", 5,'Data Structures',            2,1,0,15),
+(4,"223P",5,'Intro to Python Programming',3,1,0,15),
 (5,"223W",5,'Intro to Python Programming Waitlist',3,2,0,15);
 
 CREATE TABLE Students (
@@ -90,9 +90,9 @@ CREATE TABLE Waitlists (
 );
 
 INSERT INTO Waitlists(StudentID,ClassId,InstructorID,SectionNumber,Position) VALUES
-(1,1,1,5,1),
-(2,2,1,5,2),
-(3,1,3,5,5);
+(7,1,1,5,1),
+(8,2,1,5,2),
+(9,1,3,5,2);
 
 CREATE TABLE Freeze (
     IsFrozen BOOLEAN DEFAULT 0

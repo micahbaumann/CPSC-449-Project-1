@@ -30,6 +30,11 @@ def check_id_exists_in_table(id_name: str,id_val: int, table_name: str, db: sqli
 
 ### Student related endpoints
 
+@app.get("/table/{tablename}")
+def list_table(tablename: str,db: sqlite3.Connection = Depends(get_db)):
+    res = db.execute(f"SELECT * FROM {tablename}")
+    return {"Result": res.fetchall()}
+
 @app.get("/list") # Done
 def list_open_classes(db: sqlite3.Connection = Depends(get_db)):
     if (db.execute("SELECT IsFrozen FROM Freeze").fetchone()[0] == 1):
@@ -50,15 +55,24 @@ def enroll_student_in_class(studentid: int, classid: int, sectionid: int, db: sq
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Class not found")
     class_section = classes["SectionNumber"]
+    instructorid = classes["InstructorID"]
     count = db.execute("SELECT COUNT(*) FROM Enrollments WHERE ClassID = ?", (classid,)).fetchone()[0]
+    waitlist_count = db.execute("SELECT COUNT(*) FROM Waitlists WHERE ClassID = ?", (classid,)).fetchone()[0]
+    print(count)
     if count <= classes["MaximumEnrollment"]:
         db.execute("INSERT INTO Enrollments(StudentID, ClassID, SectionNumber) VALUES(?,?,?)",(studentid, classid, class_section))
         db.commit()
         return {"message": f"Enrolled student {studentid} in section {class_section} of class {classid}."}
-    else:
-        db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber) VALUES(?,?,?)",(studentid, classid, class_section))
+    elif waitlist_count <= WAITLIST_MAXIMUM:
+        
+        max_waitlist_position = db.execute("SELECT MAX(Position) FROM Waitlists WHERE ClassID = ? AND  SectionNumber = ?",(classid,sectionid)).fetchone()[0]
+        print("Position: " + str(max_waitlist_position))
+        db.execute("INSERT INTO Waitlists(StudentID, ClassID, SectionNumber, InstructorID, Position) VALUES(?,?,?,?,?)",(studentid, classid, class_section,instructorid,max_waitlist_position + 1))
         db.commit()
         return {"message": f"Enrolled in waitlist {class_section} of class {classid}."}
+    else:
+        return {"message": f"Unable to enroll in waitlist for the class, reached the maximum number of students"}
+
 
 @app.delete("/enrollmentdrop/{studentid}/{classid}/{sectionid}") # Done
 def drop_student_from_class(studentid: int, classid: int,sectionid: int, db: sqlite3.Connection = Depends(get_db)):
